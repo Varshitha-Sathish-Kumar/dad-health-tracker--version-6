@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily Check-In">
+<title>Daily Check-In</title>
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+  :root{
+    --paper:#F6F2EA;
+    --paper-raised:#FFFFFF;
+    --ink:#2B2A28;
+    --ink-soft:#6B6660;
+    --rule:#DCD4C4;
+    --clay:#B5664A;
+    --clay-soft:#E7D2C6;
+    --sage:#6E8266;
+    --sage-soft:#DCE4D6;
+    --gold:#C7972F;
+    --gold-soft:#F1E2BC;
+    --shadow: 0 1px 2px rgba(43,42,40,0.06), 0 6px 16px rgba(43,42,40,0.06);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family: 'Iowan Old Style','Palatino Linotype','Georgia',serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    min-height:100vh;
+  }
+  @supports (font: -apple-system-body) {
+    body{ font-family: 'New York', 'Iowan Old Style', Georgia, serif; }
+  }
+
+  .label-face{
+    font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+    letter-spacing:.04em;
+  }
+
+  header.top{
+    padding: calc(22px + env(safe-area-inset-top)) 22px 16px;
+    display:flex; align-items:baseline; justify-content:space-between;
+  }
+  header.top h1{
+    font-size:22px; margin:0; font-weight:600; letter-spacing:.01em;
+  }
+  header.top .date{
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    font-size:13px; color:var(--ink-soft); letter-spacing:.03em;
+  }
+
+  main{ padding: 0 18px; max-width:560px; margin:0 auto; }
+
+  /* Affirmation postcard */
+  .affirmation{
+    position:relative;
+    background:var(--paper-raised);
+    border:1px solid var(--rule);
+    border-radius:14px;
+    padding:22px 24px 20px;
+    margin: 4px 0 22px;
+    box-shadow:var(--shadow);
+  }
+  .affirmation::before{
+    content:"";
+    position:absolute; top:14px; right:16px;
+    width:28px; height:28px;
+    background: radial-gradient(circle at 35% 35%, var(--gold-soft), var(--gold) 70%);
+    border-radius:50%;
+    opacity:.55;
+  }
+  .affirmation .eyebrow{
+    font-family:-apple-system, sans-serif;
+    font-size:11px; text-transform:uppercase; letter-spacing:.12em;
+    color:var(--clay); font-weight:600; margin-bottom:8px;
+  }
+  .affirmation p{
+    font-size:19px; line-height:1.45; margin:0; font-style:italic;
+    color:var(--ink); padding-right:30px;
+  }
+
+  /* Section card */
+  .card{
+    background:var(--paper-raised);
+    border:1px solid var(--rule);
+    border-radius:14px;
+    padding:18px 18px 16px;
+    margin-bottom:16px;
+    box-shadow:var(--shadow);
+  }
+  .card h2{
+    font-size:13px; margin:0 0 14px;
+    font-family:-apple-system, sans-serif;
+    text-transform:uppercase; letter-spacing:.09em;
+    color:var(--ink-soft); font-weight:600;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card h2 .dot{ width:7px;height:7px;border-radius:50%; }
+
+  .row{ display:flex; gap:12px; }
+  .field{ flex:1; }
+  .field label{
+    display:block; font-family:-apple-system, sans-serif;
+    font-size:12px; color:var(--ink-soft); margin-bottom:6px; letter-spacing:.02em;
+  }
+  .field input{
+    width:100%;
+    font-family: -apple-system, 'SF Pro Text', sans-serif;
+    font-size:26px; font-weight:600; color:var(--ink);
+    border:none; border-bottom:2px solid var(--rule);
+    background:transparent;
+    padding:4px 2px 8px;
+    -webkit-appearance:none;
+  }
+  .field input:focus{ outline:none; border-bottom-color:var(--clay); }
+  .field .unit{
+    font-size:13px; color:var(--ink-soft); font-family:-apple-system, sans-serif;
+    margin-left:4px; font-weight:400;
+  }
+
+  .bp-zone{
+    margin-top:14px; display:flex; align-items:center; gap:10px;
+    font-family:-apple-system, sans-serif; font-size:13px; color:var(--ink-soft);
+    min-height:18px;
+  }
+  .bp-zone .swatch{ width:10px;height:10px;border-radius:50%; flex-shrink:0; }
+
+  /* Symptoms */
+  .symptom-list{ display:flex; flex-direction:column; gap:10px; }
+  .symptom-row{
+    display:flex; align-items:center; gap:12px;
+    padding:8px 0;
+    border-bottom:1px solid var(--rule);
+  }
+  .symptom-row:last-child{ border-bottom:none; }
+  .symptom-row .name{ flex:1; font-size:16px; }
+  .severity{ display:flex; gap:6px; }
+  .severity button{
+    width:28px; height:28px; border-radius:50%;
+    border:1.5px solid var(--rule); background:var(--paper-raised);
+    font-family:-apple-system, sans-serif; font-size:13px; color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
+    padding:0;
+  }
+  .severity button.active{
+    background:var(--clay); border-color:var(--clay); color:#fff; font-weight:600;
+  }
+  .remove-symptom{
+    width:26px; height:26px; border:none; background:none; color:var(--ink-soft);
+    font-size:18px; line-height:1; padding:0; flex-shrink:0;
+  }
+
+  .add-symptom{
+    display:flex; gap:8px; margin-top:12px;
+  }
+  .add-symptom input{
+    flex:1; font-family:-apple-system, sans-serif; font-size:15px;
+    padding:10px 12px; border:1px solid var(--rule); border-radius:9px;
+    background:var(--paper);
+  }
+  .add-symptom input:focus{ outline:none; border-color:var(--clay); }
+  .add-symptom button{
+    font-family:-apple-system, sans-serif; font-size:14px; font-weight:600;
+    color:var(--clay); background:var(--clay-soft); border:none;
+    border-radius:9px; padding:0 16px;
+  }
+
+  .notes textarea{
+    width:100%; min-height:64px; border:1px solid var(--rule); border-radius:9px;
+    background:var(--paper); padding:10px 12px; font-family: inherit; font-size:15px;
+    resize:vertical; color:var(--ink);
+  }
+  .notes textarea:focus{ outline:none; border-color:var(--clay); }
+
+  /* Sleep + meds */
+  .sleep-row{ display:flex; gap:14px; align-items:flex-end; }
+  .sleep-row .field{ flex:1; }
+
+  .meds-toggle{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 2px 2px;
+    margin-top:6px; border-top:1px solid var(--rule);
+  }
+  .meds-toggle .meds-label{ font-size:16px; }
+  .meds-toggle .meds-sub{
+    font-family:-apple-system, sans-serif; font-size:12px; color:var(--ink-soft);
+  }
+  .switch{
+    position:relative; width:50px; height:30px; border-radius:15px;
+    background:var(--rule); border:none; flex-shrink:0; padding:0;
+  }
+  .switch .knob{
+    position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.25);
+    transition:left .18s ease;
+  }
+  .switch.on{ background:var(--sage); }
+  .switch.on .knob{ left:23px; }
+
+  /* Quick severity sliders (tiredness, knee pain) */
+  .quick-slider{ margin-bottom:16px; }
+  .quick-slider:last-child{ margin-bottom:0; }
+  .quick-slider .qs-head{
+    display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;
+  }
+  .quick-slider .qs-name{ font-size:16px; }
+  .quick-slider .qs-value{
+    font-family:-apple-system, sans-serif; font-size:13px; color:var(--ink-soft);
+  }
+  .qs-track{ display:flex; gap:6px; }
+  .qs-track button{
+    flex:1; height:34px; border-radius:8px;
+    border:1.5px solid var(--rule); background:var(--paper-raised);
+    font-family:-apple-system, sans-serif; font-size:13px; color:var(--ink-soft); font-weight:600;
+    padding:0;
+  }
+  .qs-track button.active{ background:var(--clay); border-color:var(--clay); color:#fff; }
+
+  /* Blood sugar */
+  .sugar-list{ display:flex; flex-direction:column; gap:0; }
+  .sugar-entry{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 0; border-bottom:1px solid var(--rule);
+  }
+  .sugar-entry:last-child{ border-bottom:none; }
+  .sugar-entry .sg-label{
+    flex:1.1; font-family:-apple-system, sans-serif; font-size:14px; color:var(--ink-soft);
+  }
+  .sugar-entry .sg-value{ font-size:17px; font-weight:600; flex:0 0 auto; min-width:46px; text-align:right; }
+  .sugar-entry .sg-unit{ font-family:-apple-system, sans-serif; font-size:12px; color:var(--ink-soft); }
+  .sugar-entry .remove-symptom{ margin-left:2px; }
+
+  .add-sugar{ margin-top:12px; }
+  .add-sugar .row{ margin-bottom:8px; }
+  .add-sugar select{
+    flex:1.1; font-family:-apple-system, sans-serif; font-size:14px;
+    padding:10px 10px; border:1px solid var(--rule); border-radius:9px;
+    background:var(--paper); color:var(--ink);
+    -webkit-appearance:none; appearance:none;
+  }
+  .add-sugar input{
+    flex:0.8; font-family:-apple-system, sans-serif; font-size:16px; font-weight:600;
+    padding:10px 12px; border:1px solid var(--rule); border-radius:9px;
+    background:var(--paper); color:var(--ink);
+  }
+  .add-sugar button{
+    width:100%; font-family:-apple-system, sans-serif; font-size:14px; font-weight:600;
+    color:var(--clay); background:var(--clay-soft); border:none;
+    border-radius:9px; padding:10px 0;
+  }
+  .sugar-empty{
+    font-family:-apple-system, sans-serif; font-size:13px; color:var(--ink-soft);
+    padding:4px 0 2px;
+  }
+
+  .save-bar{
+    position:fixed; left:0; right:0; bottom:0;
+    padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--paper) 60%, transparent);
+  }
+  .save-btn{
+    max-width:560px; margin:0 auto; display:block; width:100%;
+    background:var(--ink); color:var(--paper);
+    font-family:-apple-system, sans-serif; font-size:16px; font-weight:600;
+    letter-spacing:.02em;
+    padding:15px; border:none; border-radius:12px;
+    box-shadow:0 4px 14px rgba(43,42,40,0.22);
+  }
+  .save-btn:active{ transform:scale(0.99); }
+  .save-btn.saved{ background:var(--sage); }
+
+  /* Tabs */
+  .tabs{
+    display:flex; gap:6px; margin: 4px 0 18px;
+    background:var(--clay-soft); border-radius:11px; padding:4px;
+  }
+  .tabs button{
+    flex:1; padding:9px 0; border:none; background:transparent; border-radius:8px;
+    font-family:-apple-system, sans-serif; font-size:14px; font-weight:600;
+    color:var(--clay);
+  }
+  .tabs button.active{ background:var(--paper-raised); box-shadow:var(--shadow); color:var(--ink); }
+
+  /* History */
+  .history-entry{
+    padding:14px 0; border-bottom:1px solid var(--rule);
+  }
+  .history-entry:last-child{ border-bottom:none; }
+  .history-entry .h-date{
+    font-family:-apple-system, sans-serif; font-size:12px; color:var(--ink-soft);
+    letter-spacing:.03em; margin-bottom:6px; text-transform:uppercase;
+  }
+  .history-entry .h-main{
+    display:flex; gap:18px; font-size:15px; margin-bottom:4px;
+  }
+  .history-entry .h-main b{ font-size:17px; }
+  .history-entry .h-symptoms{
+    font-family:-apple-system, sans-serif; font-size:13px; color:var(--ink-soft);
+  }
+  .history-entry .h-symptoms span{
+    display:inline-block; background:var(--sage-soft); color:var(--sage);
+    border-radius:6px; padding:2px 8px; margin: 3px 4px 0 0; font-weight:600;
+  }
+  .history-entry .h-notes{
+    font-size:14px; color:var(--ink-soft); margin-top:6px; font-style:italic;
+  }
+  .empty-state{
+    text-align:center; padding:40px 20px; color:var(--ink-soft);
+    font-family:-apple-system, sans-serif; font-size:14px; line-height:1.6;
+  }
+
+  .chart-wrap{ overflow-x:auto; padding-bottom:4px; }
+  svg text{ font-family:-apple-system, sans-serif; }
+
+  .delete-entry{
+    float:right; background:none; border:none; color:var(--ink-soft);
+    font-family:-apple-system, sans-serif; font-size:12px; text-decoration:underline;
+  }
+
+  .toast{
+    position:fixed; top: calc(16px + env(safe-area-inset-top)); left:50%;
+    transform:translateX(-50%);
+    background:var(--ink); color:var(--paper);
+    font-family:-apple-system, sans-serif; font-size:13px;
+    padding:9px 16px; border-radius:20px; box-shadow:var(--shadow);
+    opacity:0; pointer-events:none; transition:opacity .25s, transform .25s;
+    z-index:50;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(4px); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1 id="greeting">Good morning</h1>
+  <div class="date" id="todayDate"></div>
+</header>
+
+<main>
+  <div class="tabs">
+    <button id="tabToday" class="active">Today</button>
+    <button id="tabHistory">History</button>
+  </div>
+
+  <!-- TODAY VIEW -->
+  <div id="viewToday">
+    <div class="affirmation">
+      <div class="eyebrow">Today's thought</div>
+      <p id="affirmationText">Loading...</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot" style="background:var(--clay)"></span>Weight</h2>
+      <div class="field">
+        <label for="weightInput">Weight <span class="unit">(kg)</span></label>
+        <input type="number" inputmode="decimal" step="0.1" id="weightInput" placeholder="—">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot" style="background:var(--clay)"></span>Blood pressure</h2>
+      <div class="row">
+        <div class="field">
+          <label for="sysInput">Systolic</label>
+          <input type="number" inputmode="numeric" id="sysInput" placeholder="—">
+        </div>
+        <div class="field">
+          <label for="diaInput">Diastolic</label>
+          <input type="number" inputmode="numeric" id="diaInput" placeholder="—">
+        </div>
+        <div class="field">
+          <label for="pulseInput">Pulse</label>
+          <input type="number" inputmode="numeric" id="pulseInput" placeholder="—">
+        </div>
+      </div>
+      <div class="bp-zone" id="bpZone"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot" style="background:var(--gold)"></span>Sleep &amp; medication</h2>
+      <div class="sleep-row">
+        <div class="field">
+          <label for="sleepInput">Hours slept</label>
+          <input type="number" inputmode="decimal" step="0.5" id="sleepInput" placeholder="—">
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px;">
+          <label for="medsSelect">Tablets taken today</label>
+          <select id="medsSelect" style="width:100%;padding:10px;border:1px solid #DCD4C4;border-radius:8px;">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+       </div>
+    </div>
+
+    
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot" style="background:var(--sage)"></span>Blood sugar <span style="font-weight:400; text-transform:none; letter-spacing:0;">(optional)</span></h2>
+      <div class="sugar-list" id="sugarList"></div>
+      <div class="add-sugar">
+        <div class="row">
+          <select id="sugarTiming">
+            <option value="Fasting">Fasting</option>
+            <option value="Before breakfast">Before breakfast</option>
+            <option value="After breakfast">After breakfast</option>
+            <option value="Before lunch">Before lunch</option>
+            <option value="After lunch">After lunch</option>
+            <option value="Before dinner">Before dinner</option>
+            <option value="After dinner">After dinner</option>
+            <option value="Bedtime">Bedtime</option>
+            <option value="Other">Other</option>
+          </select>
+          <input type="number" inputmode="decimal" step="0.1" id="sugarValueInput" placeholder="mg/dL">
+        </div>
+        <button id="addSugarBtn" type="button">Add reading</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot" style="background:var(--sage)"></span>Other symptoms</h2>
+      <div class="symptom-list" id="symptomList"></div>
+      <div class="add-symptom">
+        <input type="text" id="newSymptomInput" placeholder="Add something to track, e.g. Headache">
+        <button id="addSymptomBtn">Add</button>
+      </div>
+    </div>
+
+    <div class="card notes">
+      <h2><span class="dot" style="background:var(--gold)"></span>Notes</h2>
+      <textarea id="notesInput" placeholder="Anything else worth remembering about today..."></textarea>
+    </div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div id="viewHistory" style="display:none;">
+    <div class="card">
+      <h2><span class="dot" style="background:var(--clay)"></span>Weight trend</h2>
+      <div class="chart-wrap"><svg id="weightChart" width="524" height="160"></svg></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot" style="background:var(--clay)"></span>Blood pressure trend</h2>
+      <div class="chart-wrap"><svg id="bpChart" width="524" height="160"></svg></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot" style="background:var(--sage)"></span>Past entries</h2>
+      <div style="margin-bottom:12px;"><button id="exportCSVBtn" style="padding:10px 14px;border:none;border-radius:8px;background:#B5664A;color:white;font-weight:600;">Export CSV</button></div><div id="historyList"></div>
+    </div>
+  </div>
+</main>
+
+<div class="save-bar">
+  <button class="save-btn" id="saveBtn">Save today's check-in</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "healthTracker.entries.v1";
+  var SYMPTOMS_KEY = "healthTracker.symptomDefs.v1";
+
+  var AFFIRMATIONS = [
+    "You showed up today, and that's worth something.",
+    "Taking care of yourself is not a small thing. It's the whole thing.",
+    "One number on a screen doesn't define your worth or your day.",
+    "Slow progress is still progress. Keep going.",
+    "You've gotten through hard days before. You know how to do this.",
+    "Rest is productive. Give yourself permission to take it.",
+    "Every day you check in is a day you're choosing yourself.",
+    "Your body has carried you this far. Be gentle with it today.",
+    "It's okay to have an off day. Tomorrow is a clean page.",
+    "Small, steady habits are what real change is made of.",
+    "You are allowed to feel proud of showing up for your health.",
+    "Whatever today's numbers say, you are still doing the right things.",
+    "Healing isn't a straight line, and that's perfectly normal.",
+    "You don't have to feel great to be doing great.",
+    "Someone is glad you're taking care of yourself today.",
+    "A calm mind is part of a healthy heart. Take a breath.",
+    "You're not behind. You're exactly where your story needs you to be.",
+    "Consistency beats intensity. You're proving that just by being here.",
+    "Your effort counts even on the days it doesn't feel like it.",
+    "Today's check-in is a small act of self-respect.",
+    "There is no finish line for taking care of yourself, just today's step.",
+    "You're allowed to ask for help, and allowed to rest without guilt.",
+    "Whatever the numbers say, you woke up and tried again. That matters.",
+    "You are more than any single reading. You are the whole picture.",
+    "Patience with yourself is its own kind of strength.",
+    "Good days build on each other. This could be one of them.",
+    "You're doing better than the voice in your head gives you credit for.",
+    "Caring for your body is also caring for everyone who loves you.",
+    "There's quiet courage in just keeping track, day after day.",
+    "Today doesn't have to be perfect to be good."
+  ];
+  while(AFFIRMATIONS.length < 365){ AFFIRMATIONS.push('Today is another opportunity to care for your health. #' + (AFFIRMATIONS.length+1)); }
+
+  function pad(n){ return n < 10 ? "0"+n : ""+n; }
+  function todayKey(d){
+    d = d || new Date();
+    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  }
+  function formatLong(dateKey){
+    var parts = dateKey.split("-").map(Number);
+    var d = new Date(parts[0], parts[1]-1, parts[2]);
+    return d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+  }
+
+  function loadEntries(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveEntries(entries){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+  function loadSymptomDefs(){
+    try{
+      var raw = localStorage.getItem(SYMPTOMS_KEY);
+      return raw ? JSON.parse(raw) : ["Headache","Fatigue","Dizziness","Tiredness","Knee Pain"];
+    }catch(e){ return ["Headache","Fatigue","Dizziness"]; }
+  }
+  function saveSymptomDefs(list){
+    localStorage.setItem(SYMPTOMS_KEY, JSON.stringify(list));
+  }
+
+  var entries = loadEntries();
+  var symptomDefs = loadSymptomDefs();
+  var key = todayKey();
+  var draft = entries[key] || {
+    weight:"", sys:"", dia:"", pulse:"",
+    sleepHours:"", medsTaken:false,
+    tiredness:0, kneePain:0,
+    sugarReadings:[],
+    symptoms:{}, notes:""
+  };
+  // Migrate older entries that may be missing newer fields
+  if (draft.sleepHours === undefined) draft.sleepHours = "";
+  if (draft.medsTaken === undefined) draft.medsTaken = false;
+  if (draft.tiredness === undefined) draft.tiredness = 0;
+  if (draft.kneePain === undefined) draft.kneePain = 0;
+  if (draft.sugarReadings === undefined) draft.sugarReadings = [];
+
+  // Greeting + date
+  var hour = new Date().getHours();
+  document.getElementById("greeting").textContent =
+    hour < 12 ? "Good morning" : (hour < 18 ? "Good afternoon" : "Good evening");
+  document.getElementById("todayDate").textContent =
+    new Date().toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+
+  // Affirmation: stable per day, based on date hash
+  (function(){
+    var hash = 0;
+    for (var i=0;i<key.length;i++){ hash = (hash*31 + key.charCodeAt(i)) >>> 0; }
+    var idx = hash % AFFIRMATIONS.length;
+    document.getElementById("affirmationText").textContent = AFFIRMATIONS[idx];
+  })();
+
+  // ---- Inputs ----
+  var weightInput = document.getElementById("weightInput");
+  var sysInput = document.getElementById("sysInput");
+  var diaInput = document.getElementById("diaInput");
+  var pulseInput = document.getElementById("pulseInput");
+  var notesInput = document.getElementById("notesInput");
+
+  weightInput.value = draft.weight || "";
+  sysInput.value = draft.sys || "";
+  diaInput.value = draft.dia || "";
+  pulseInput.value = draft.pulse || "";
+  notesInput.value = draft.notes || "";
+
+  function updateBpZone(){
+    var s = parseInt(sysInput.value, 10);
+    var d = parseInt(diaInput.value, 10);
+    var zoneEl = document.getElementById("bpZone");
+
+    if (!s || !d){
+      zoneEl.innerHTML = "";
+      return;
+    }
+
+    var label, color;
+
+    if (s <= 120 && d <= 80){
+      label = "Normal blood pressure";
+      color = "var(--sage)";
+    }
+    else if (s < 130 && d < 80){
+      label = "Elevated blood pressure";
+      color = "var(--gold)";
+    }
+    else if (s >= 180 || d >= 120){
+      label = "Severe hypertension";
+      color = "var(--clay)";
+    }
+    else if (s >= 140 || d >= 90){
+      label = "Stage 2 hypertension";
+      color = "var(--clay)";
+    }
+    else {
+      label = "Stage 1 hypertension";
+      color = "var(--clay)";
+    }
+
+    zoneEl.innerHTML =
+      '<span class="swatch" style="background:'+color+'"></span>' + label;
+  }
+
+  sysInput.addEventListener("input", updateBpZone);
+  diaInput.addEventListener("input", updateBpZone);
+  updateBpZone();
+
+  // ---- Symptoms ----
+  var symptomList = document.getElementById("symptomList");
+
+  function renderSymptoms(){
+    symptomList.innerHTML = "";
+    if (symptomDefs.length === 0){
+      symptomList.innerHTML = '<div style="font-family:-apple-system,sans-serif;font-size:13px;color:var(--ink-soft);">No symptoms added yet. Add one below.</div>';
+      return;
+    }
+    symptomDefs.forEach(function(name){
+      var row = document.createElement("div");
+      row.className = "symptom-row";
+
+      var nameEl = document.createElement("div");
+      nameEl.className = "name";
+      nameEl.textContent = name;
+      row.appendChild(nameEl);
+
+      var sev = document.createElement("div");
+      sev.className = "severity";
+      var levels = [];
+      for(var i=0;i<=10;i++){
+        levels.push({v:i,label:String(i)});
+      }
+      levels.forEach(function(lv){
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = lv.label;
+        btn.title = lv.v === 0 ? "Not present" : ("Severity " + lv.v);
+        var current = draft.symptoms[name] || 0;
+        if (current === lv.v) btn.classList.add("active");
+        btn.addEventListener("click", function(){
+          draft.symptoms[name] = lv.v;
+          renderSymptoms();
+        });
+        sev.appendChild(btn);
+      });
+      row.appendChild(sev);
+
+      var removeBtn = document.createElement("button");
+      removeBtn.className = "remove-symptom";
+      removeBtn.textContent = "×";
+      removeBtn.title = "Remove this from the list";
+      removeBtn.addEventListener("click", function(){
+        symptomDefs = symptomDefs.filter(function(n){ return n !== name; });
+        delete draft.symptoms[name];
+        saveSymptomDefs(symptomDefs);
+        renderSymptoms();
+      });
+      row.appendChild(removeBtn);
+
+      symptomList.appendChild(row);
+    });
+  }
+  renderSymptoms();
+
+  document.getElementById("addSymptomBtn").addEventListener("click", addSymptom);
+  document.getElementById("newSymptomInput").addEventListener("keypress", function(e){
+    if (e.key === "Enter") addSymptom();
+  });
+  function addSymptom(){
+    var input = document.getElementById("newSymptomInput");
+    var name = input.value.trim();
+    if (!name) return;
+    if (symptomDefs.indexOf(name) === -1){
+      symptomDefs.push(name);
+      saveSymptomDefs(symptomDefs);
+    }
+    input.value = "";
+    renderSymptoms();
+  }
+
+
+  function exportCSV(){
+    var rows=[["Date","Weight","Systolic","Diastolic","Pulse","Sleep","Meds","Tiredness","KneePain","Notes"]];
+    Object.keys(entries).sort().forEach(function(date){
+      var e=entries[date];
+      rows.push([date,e.weight||"",e.sys||"",e.dia||"",e.pulse||"",e.sleepHours||"",e.medsTaken?"Yes":"No",e.tiredness||0,e.kneePain||0,(e.notes||"").replace(/,/g,";")]);
+    });
+    var csv=rows.map(r=>r.map(v=>'"'+v+'"').join(",")).join("\n");
+    var blob=new Blob([csv],{type:"text/csv"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="dad-health-data.csv";
+    a.click();
+  }
+  document.addEventListener("click",function(e){
+    if(e.target && e.target.id==="exportCSVBtn"){ exportCSV(); }
+  });
+
+  // ---- Save ----
+  var toastEl = document.getElementById("toast");
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    setTimeout(function(){ toastEl.classList.remove("show"); }, 1800);
+  }
+
+  document.getElementById("saveBtn").addEventListener("click", function(){
+    draft.weight = weightInput.value;
+    draft.sys = sysInput.value;
+    draft.dia = diaInput.value;
+    draft.pulse = pulseInput.value;
+    draft.notes = notesInput.value;
+    draft.savedAt = new Date().toISOString();
+    entries[key] = draft;
+    saveEntries(entries);
+
+    var btn = document.getElementById("saveBtn");
+    btn.textContent = "Saved ✓";
+    btn.classList.add("saved");
+    showToast("Today's check-in is saved");
+    setTimeout(function(){
+      btn.textContent = "Save today's check-in";
+      btn.classList.remove("saved");
+    }, 1800);
+
+    renderHistory();
+  });
+
+  // ---- Tabs ----
+  var tabToday = document.getElementById("tabToday");
+  var tabHistory = document.getElementById("tabHistory");
+  var viewToday = document.getElementById("viewToday");
+  var viewHistory = document.getElementById("viewHistory");
+
+  tabToday.addEventListener("click", function(){
+    tabToday.classList.add("active"); tabHistory.classList.remove("active");
+    viewToday.style.display = ""; viewHistory.style.display = "none";
+  });
+  tabHistory.addEventListener("click", function(){
+    tabHistory.classList.add("active"); tabToday.classList.remove("active");
+    viewHistory.style.display = ""; viewToday.style.display = "none";
+    renderHistory();
+  });
+
+  // ---- History rendering ----
+  function sortedKeys(){
+    return Object.keys(entries).sort();
+  }
+
+  function renderHistory(){
+    var keys = sortedKeys();
+    var listEl = document.getElementById("historyList");
+
+    if (keys.length === 0){
+      listEl.innerHTML = '<div class="empty-state">No entries yet. Once your dad saves his first check-in, it will show up here.</div>';
+      drawChart("weightChart", [], "kg");
+      drawChart("bpChart", [], "mmHg");
+      return;
+    }
+
+    // Render list, most recent first
+    listEl.innerHTML = "";
+    keys.slice().reverse().forEach(function(k){
+      var e = entries[k];
+      var div = document.createElement("div");
+      div.className = "history-entry";
+
+      var dateRow = document.createElement("div");
+      dateRow.className = "h-date";
+      dateRow.textContent = formatLong(k);
+      var delBtn = document.createElement("button");
+      delBtn.className = "delete-entry";
+      delBtn.textContent = "Delete";
+      delBtn.addEventListener("click", function(){
+        if (confirm("Delete the entry from " + formatLong(k) + "?")){
+          delete entries[k];
+          saveEntries(entries);
+          renderHistory();
+        }
+      });
+      dateRow.appendChild(delBtn);
+      div.appendChild(dateRow);
+
+      var mainRow = document.createElement("div");
+      mainRow.className = "h-main";
+      var bits = [];
+      if (e.weight) bits.push("<span><b>"+e.weight+"</b> kg</span>");
+      if (e.sys && e.dia) bits.push("<span><b>"+e.sys+"/"+e.dia+"</b> mmHg</span>");
+      if (e.pulse) bits.push("<span><b>"+e.pulse+"</b> bpm</span>");
+      mainRow.innerHTML = bits.join("") || "<span style='color:var(--ink-soft)'>No vitals logged</span>";
+      div.appendChild(mainRow);
+
+      var symptomNames = Object.keys(e.symptoms || {}).filter(function(n){ return e.symptoms[n] > 0; });
+      if (symptomNames.length){
+        var symEl = document.createElement("div");
+        symEl.className = "h-symptoms";
+        symEl.innerHTML = symptomNames.map(function(n){
+          return "<span>"+n+" · "+e.symptoms[n]+"</span>";
+        }).join("");
+        div.appendChild(symEl);
+      }
+
+      if (e.notes){
+        var notesEl = document.createElement("div");
+        notesEl.className = "h-notes";
+        notesEl.textContent = "\u201C" + e.notes + "\u201D";
+        div.appendChild(notesEl);
+      }
+
+      listEl.appendChild(div);
+    });
+
+    drawWeightChart(keys);
+    drawBpChart(keys);
+  }
+
+  function drawChart(id, points, unit){
+    var svg = document.getElementById(id);
+    svg.innerHTML = '<text x="10" y="80" fill="var(--ink-soft)" font-size="13">Not enough data yet</text>';
+  }
+
+  function niceScale(values, padFrac){
+    var min = Math.min.apply(null, values);
+    var max = Math.max.apply(null, values);
+    if (min === max){ min -= 1; max += 1; }
+    var pad = (max - min) * (padFrac || 0.15);
+    return { min: min - pad, max: max + pad };
+  }
+
+  function buildPath(keys, getY, height, yScale){
+    var w = 524, leftPad = 36, rightPad = 16, topPad = 14, bottomPad = 26;
+    var plotW = w - leftPad - rightPad;
+    var plotH = height - topPad - bottomPad;
+    var n = keys.length;
+    var pts = keys.map(function(k, i){
+      var x = n === 1 ? leftPad + plotW/2 : leftPad + (plotW * i / (n-1));
+      var val = getY(entries[k]);
+      var y = topPad + plotH * (1 - (val - yScale.min) / (yScale.max - yScale.min));
+      return { x:x, y:y, val:val, k:k };
+    });
+    return { pts:pts, leftPad:leftPad, plotW:plotW, plotH:plotH, topPad:topPad, bottomPad:bottomPad };
+  }
+
+  function renderLineSVG(svgId, keys, series, unitLabel){
+    var svg = document.getElementById(svgId);
+    var height = 160;
+    svg.setAttribute("viewBox", "0 0 524 " + height);
+
+    var validKeys = keys.filter(function(k){ return series.some(function(s){ return s.get(entries[k]) !== null; }); });
+
+    if (validKeys.length < 1){
+      svg.innerHTML = '<text x="14" y="84" fill="var(--ink-soft)" font-size="13">Not enough data yet — log a few days to see a trend</text>';
+      return;
+    }
+
+    var allVals = [];
+    validKeys.forEach(function(k){
+      series.forEach(function(s){
+        var v = s.get(entries[k]);
+        if (v !== null) allVals.push(v);
+      });
+    });
+    var yScale = niceScale(allVals, 0.2);
+
+    var svgParts = [];
+    var geo = null;
+
+    series.forEach(function(s){
+      var keysWithVal = validKeys.filter(function(k){ return s.get(entries[k]) !== null; });
+      if (keysWithVal.length === 0) return;
+      var g = buildPath(keysWithVal, s.get, height, yScale);
+      geo = g;
+      var pathD = g.pts.map(function(p,i){ return (i===0?"M":"L") + p.x.toFixed(1) + "," + p.y.toFixed(1); }).join(" ");
+      svgParts.push('<path d="'+pathD+'" fill="none" stroke="'+s.color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>');
+      g.pts.forEach(function(p){
+        svgParts.push('<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+s.color+'"/>');
+      });
+    });
+
+    // Y-axis labels (min/max)
+    if (geo){
+      svgParts.unshift(
+        '<text x="4" y="'+(geo.topPad+5)+'" font-size="11" fill="var(--ink-soft)">'+Math.round(yScale.max)+'</text>',
+        '<text x="4" y="'+(geo.topPad+geo.plotH)+'" font-size="11" fill="var(--ink-soft)">'+Math.round(yScale.min)+'</text>'
+      );
+      // X-axis: first and last date
+      var firstK = validKeys[0], lastK = validKeys[validKeys.length-1];
+      svgParts.push(
+        '<text x="'+geo.leftPad+'" y="'+(height-6)+'" font-size="11" fill="var(--ink-soft)">'+formatLong(firstK)+'</text>'
+      );
+      if (firstK !== lastK){
+        svgParts.push(
+          '<text x="'+(geo.leftPad+geo.plotW)+'" y="'+(height-6)+'" font-size="11" fill="var(--ink-soft)" text-anchor="end">'+formatLong(lastK)+'</text>'
+        );
+      }
+    }
+
+    svg.innerHTML = svgParts.join("");
+  }
+
+  function drawWeightChart(keys){
+    renderLineSVG("weightChart", keys, [
+      { get: function(e){ return e.weight ? parseFloat(e.weight) : null; }, color:"#B5664A" }
+    ], "kg");
+  }
+
+  function drawBpChart(keys){
+    renderLineSVG("bpChart", keys, [
+      { get: function(e){ return e.sys ? parseFloat(e.sys) : null; }, color:"#B5664A" },
+      { get: function(e){ return e.dia ? parseFloat(e.dia) : null; }, color:"#6E8266" }
+    ], "mmHg");
+  }
+
+  renderHistory();
+
+})();
+</script>
+</body>
+</html>
